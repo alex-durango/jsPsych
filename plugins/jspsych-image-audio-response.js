@@ -171,9 +171,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
                         // should never fire - trial.postprocessing is mandatory
                         onRecordingFinish(chunks);
                     }
-                    if (trial.allow_playback) {
-                        showPlaybackTools(chunks);
-                    }
                 }
             };
 
@@ -188,10 +185,16 @@ jsPsych.plugins["image-audio-response"] = (function() {
         }
 
         function showPlaybackTools(data) {
+            console.log('data: ', data instanceof Blob);
             // Audio Player
             let playerDiv = display_element.querySelector('#jspsych-image-audio-response-audio-container');
-            const blob = new Blob(data, { type: 'audio/webm' });
-            let url = (URL.createObjectURL(blob));
+            let url;
+            if (data instanceof Blob) {
+                const blob = new Blob(data, { type: 'audio/webm' });
+                url = (URL.createObjectURL(blob));
+            } else {
+                url = data;
+            }
             let player = playerDiv.appendChild(document.createElement('audio'));
             player.id = 'jspsych-image-audio-response-audio';
             player.src = url;
@@ -224,6 +227,11 @@ jsPsych.plugins["image-audio-response"] = (function() {
             response.rt = rt;
 
             if (trial.response_ends_trial) {
+                end_trial();
+            }
+            if (trial.allow_playback) {
+                showPlaybackTools(response.audio_data);
+            } else {
                 end_trial();
             }
         }
