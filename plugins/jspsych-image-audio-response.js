@@ -185,7 +185,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
         }
 
         function showPlaybackTools(data) {
-            console.log('data: ', data instanceof Blob);
             // Audio Player
             let playerDiv = display_element.querySelector('#jspsych-image-audio-response-audio-container');
             let url;
