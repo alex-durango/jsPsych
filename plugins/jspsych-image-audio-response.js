@@ -111,28 +111,36 @@ jsPsych.plugins["image-audio-response"] = (function() {
         // display stimulus
         let html = '<img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus"/>';
 
-        // add audio element
-        html += '<div id="jspsych-image-audio-response-audio-container">'+trial.recording_light_off+'</div>';
-
         //show prompt if there is one
         if (trial.prompt !== null) {
             html += trial.prompt;
         }
-        // add button element
-        html += '<div id="jspsych-image-audio-response-buttons"></div>';
+
+        // add recording off light
+        html += '<div id="jspsych-image-audio-response-recording-container">'+trial.recording_light_off+'</div>';
+
+        // add audio element container with hidden audio element
+        html += '<div id="jspsych-image-audio-response-audio-container"><audio id="jspsych-image-audio-response-audio" controls style="visibility:hidden;"></audio></div>';
+
+        // add button element with hidden buttons
+        html += '<div id="jspsych-image-audio-response-buttons"><button id="jspsych-image-audio-response-okay" class="jspsych-audio-response-button jspsych-btn" style="visibility:hidden;">Okay</button><button id="jspsych-image-audio-response-rerecord" class="jspsych-audio-response-button jspsych-btn" style="visibility:hidden;">Rerecord</button></div>';
 
         display_element.innerHTML = html;
 
+        document.querySelector('#jspsych-image-audio-response-okay').addEventListener('click', end_trial);
+        document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', startRecording);
+
         // audio element processing
         function startRecording() {
-            // remove existing playback elements
+            // hide existing playback elements
             playbackElements.forEach(function (id) {
                 let element = document.getElementById(id);
-                element.innerHTML = "";
+                //element.innerHTML = "";
+                element.style.visibility = 'hidden';
             });
             navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(process_audio);
             // Add visual indicators to let people know we're recording
-            document.querySelector('#jspsych-image-audio-response-audio-container').innerHTML = trial.recording_light;
+            document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
         }
 
         startRecording();
@@ -155,6 +163,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
             // store streaming data chunks in array
             const chunks = [];
             // create media recorder instance to initialize recording
+            // Note: the MediaRecorder function is not supported in Safari or Edge
             recorder = new MediaRecorder(stream);
             recorder.data = [];
             recorder.wrapUp = false;
@@ -194,29 +203,31 @@ jsPsych.plugins["image-audio-response"] = (function() {
             } else {
                 url = data;
             }
-            let player = playerDiv.appendChild(document.createElement('audio'));
-            player.id = 'jspsych-image-audio-response-audio';
+            let player = playerDiv.querySelector('#jspsych-image-audio-response-audio');
             player.src = url;
-            player.controls = true;
+            player.style.visibility = "visible";
             // Okay/rerecord buttons
-            let buttonDiv = display_element.querySelector('#jspsych-image-audio-response-buttons');
-            let okay = buttonDiv.appendChild(document.createElement('button'));
-            let rerecord = buttonDiv.appendChild(document.createElement('button'));
-            okay.id = 'jspsych-image-audio-response-okay';
-            rerecord.id = 'jspsych-image-audio-response-rerecord';
-            okay.textContent = 'Okay';
-            rerecord.textContent = 'Rerecord';
-            okay.className = 'jspsych-audio-response-button jspsych-btn';
-            rerecord.className = okay.className;
-            okay.addEventListener('click', end_trial);
-            rerecord.addEventListener('click', startRecording);
-            // Save ids of things we want to delete later:
+            let buttonDiv = document.querySelector('#jspsych-image-audio-response-buttons');
+            let okay = buttonDiv.querySelector('#jspsych-image-audio-response-okay');
+            let rerecord = buttonDiv.querySelector('#jspsych-image-audio-response-rerecord');
+            okay.style.visibility = 'visible';
+            rerecord.style.visibility = 'visible';
+            //let okay = buttonDiv.appendChild(document.createElement('button'));
+            //let rerecord = buttonDiv.appendChild(document.createElement('button'));
+            //okay.id = 'jspsych-image-audio-response-okay';
+            //rerecord.id = 'jspsych-image-audio-response-rerecord';
+            //okay.textContent = 'Okay';
+            //rerecord.textContent = 'Rerecord';
+           // okay.className = 'jspsych-audio-response-button jspsych-btn';
+            //rerecord.className = okay.className;
+            
+            // Save ids of things we want to hide later:
             playbackElements = [playerDiv.id, buttonDiv.id];
         }
 
         function onRecordingFinish(data) {
-            // visual indicator
-            let light = document.querySelector('#jspsych-image-audio-response-audio-container');
+            // switch to the off visual indicator
+            let light = document.querySelector('#jspsych-image-audio-response-recording-container');
             if (light !== null)
                 light.innerHTML = trial.recording_light_off;
             // measure rt
