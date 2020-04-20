@@ -74,7 +74,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 type: jsPsych.plugins.parameterType.INT,
                 pretty_name: 'Stimulus duration',
                 default: null,
-                description: 'How long to hide the stimulus.'
+                description: 'How long to show the stimulus.'
             },
             margin_vertical: {
                 type: jsPsych.plugins.parameterType.STRING,
@@ -107,11 +107,18 @@ jsPsych.plugins["image-audio-response"] = (function() {
         }
 
         let playbackElements = [];
+        // store response
+        let response = {
+            rt: null,
+            audio_data: null
+        };
+        let recorder = null;
+        let start_time = null;
 
-        // display stimulus
+        // add stimulus
         let html = '<img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus"/>';
 
-        //show prompt if there is one
+        // add prompt if there is one
         if (trial.prompt !== null) {
             html += trial.prompt;
         }
@@ -125,36 +132,33 @@ jsPsych.plugins["image-audio-response"] = (function() {
         // add button element with hidden buttons
         html += '<div id="jspsych-image-audio-response-buttons"><button id="jspsych-image-audio-response-okay" class="jspsych-audio-response-button jspsych-btn" style="visibility:hidden;">Okay</button><button id="jspsych-image-audio-response-rerecord" class="jspsych-audio-response-button jspsych-btn" style="visibility:hidden;">Rerecord</button></div>';
 
-        display_element.innerHTML = html;
-
-        document.querySelector('#jspsych-image-audio-response-okay').addEventListener('click', end_trial);
-        document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', startRecording);
+        function start_trial() {
+            display_element.innerHTML = html;
+            document.querySelector('#jspsych-image-audio-response-okay').addEventListener('click', end_trial);
+            document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', start_recording);
+            // trial start time
+            start_time = performance.now();
+            // set timer to hide image if stimulus duration is set
+            if (trial.stimulus_duration !== null) {
+                jsPsych.pluginAPI.setTimeout(function() {
+                    display_element.querySelector('#jspsych-image-audio-response-stimulus').style.visibility = 'hidden';
+                }, trial.stimulus_duration);
+            }
+            start_recording();
+        }
 
         // audio element processing
-        function startRecording() {
+        function start_recording() {
             // hide existing playback elements
             playbackElements.forEach(function (id) {
                 let element = document.getElementById(id);
-                //element.innerHTML = "";
                 element.style.visibility = 'hidden';
             });
             navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(process_audio);
             // Add visual indicators to let people know we're recording
             document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
         }
-
-        startRecording();
-
-        // start timing
-        let start_time = performance.now();
-
-        // store response
-        let response = {
-            rt: null,
-            audio_data: null
-        };
-
-        let recorder = null;
+        
         // function to handle responses by the subject
         function process_audio(stream) {
             // This code largely thanks to skyllo at
@@ -212,15 +216,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
             let rerecord = buttonDiv.querySelector('#jspsych-image-audio-response-rerecord');
             okay.style.visibility = 'visible';
             rerecord.style.visibility = 'visible';
-            //let okay = buttonDiv.appendChild(document.createElement('button'));
-            //let rerecord = buttonDiv.appendChild(document.createElement('button'));
-            //okay.id = 'jspsych-image-audio-response-okay';
-            //rerecord.id = 'jspsych-image-audio-response-rerecord';
-            //okay.textContent = 'Okay';
-            //rerecord.textContent = 'Rerecord';
-           // okay.className = 'jspsych-audio-response-button jspsych-btn';
-            //rerecord.className = okay.className;
-            
             // Save ids of things we want to hide later:
             playbackElements = [playerDiv.id, buttonDiv.id];
         }
@@ -265,12 +260,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
             jsPsych.finishTrial(trial_data);
         }
 
-        // hide image if timing is set
-        if (trial.stimulus_duration !== null) {
-            jsPsych.pluginAPI.setTimeout(function() {
-                display_element.querySelector('#jspsych-image-audio-response-stimulus').style.visibility = 'hidden';
-            }, trial.stimulus_duration);
-        }
+        start_trial();
+
     };
 
     return plugin;
