@@ -54,8 +54,8 @@
         type: 'image-audio-response',
         stimulus: 'img/happy_face_3.jpg',
         postprocessing: saveFunction,
-        response_ends_trial: false,
-        prompt: "<p>What emotion is this person showing?</p>"
+        response_ends_trial: true,
+        prompt: "<p>What emotion is this person showing? (trial ends after response)</p>"
     });
 
     jsPsych.init({
