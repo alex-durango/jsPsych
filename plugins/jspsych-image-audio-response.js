@@ -254,8 +254,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
 
             if (trial.response_ends_trial) {
                 end_trial();
-            }
-            if (trial.allow_playback) {
+            } else if (trial.allow_playback) {  // only allow playback if response doesn't end trial
                 showPlaybackTools(response.audio_data);
             } else {
                 end_trial();
