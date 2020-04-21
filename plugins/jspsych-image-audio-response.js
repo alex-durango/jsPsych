@@ -93,6 +93,12 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 pretty_name: 'Response ends trial',
                 default: false,
                 description: 'If true, then trial will end when user responds.'
+            },
+            wait_for_mic_approval: {
+                type: jsPsych.plugins.parameterType.BOOL,
+                pretty_name: 'Wait for mic approval',
+                default: false,
+                description: 'If true, the trial will not start until the participant approves the browser mic request.'
             }
         }
     };
@@ -136,6 +142,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
             display_element.innerHTML = html;
             document.querySelector('#jspsych-image-audio-response-okay').addEventListener('click', end_trial);
             document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', start_recording);
+            // Add visual indicators to let people know we're recording
+            document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
             // trial start time
             start_time = performance.now();
             // set timer to hide image if stimulus duration is set
@@ -144,7 +152,9 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     display_element.querySelector('#jspsych-image-audio-response-stimulus').style.visibility = 'hidden';
                 }, trial.stimulus_duration);
             }
-            start_recording();
+            if (!trial.wait_for_mic_approval) {
+                start_recording();
+            }
         }
 
         // audio element processing
@@ -155,12 +165,23 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 element.style.visibility = 'hidden';
             });
             navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(process_audio);
-            // Add visual indicators to let people know we're recording
-            document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
+            if (!trial.wait_for_mic_approval) {
+                // Add visual indicators to let people know we're recording
+                document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
+            }
         }
         
         // function to handle responses by the subject
         function process_audio(stream) {
+
+            if (trial.wait_for_mic_approval) {
+                if (start_time === null) {
+                    start_trial();
+                } else {
+                    document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
+                }
+            } 
+
             // This code largely thanks to skyllo at
             // http://air.ghost.io/recording-to-an-audio-file-using-html5-and-js/
 
@@ -217,7 +238,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
             okay.style.visibility = 'visible';
             rerecord.style.visibility = 'visible';
             // Save ids of things we want to hide later:
-            playbackElements = [playerDiv.id, buttonDiv.id];
+            playbackElements = [player.id, okay.id, rerecord.id];
         }
 
         function onRecordingFinish(data) {
@@ -260,7 +281,11 @@ jsPsych.plugins["image-audio-response"] = (function() {
             jsPsych.finishTrial(trial_data);
         }
 
-        start_trial();
+        if (trial.wait_for_mic_approval) {
+            start_recording();
+        } else {
+            start_trial();
+        }
 
     };
 
