@@ -249,14 +249,17 @@ jsPsych.plugins["image-audio-response"] = (function() {
             // measure rt
             let end_time = performance.now();
             let rt = end_time - start_time;
-            response.audio_data = data;
+            response.audio_data = data.str;
+            response.audio_url = data.url;
             response.rt = rt;
 
             if (trial.response_ends_trial) {
                 end_trial();
             } else if (trial.allow_playback) {  // only allow playback if response doesn't end trial
                 showPlaybackTools(response.audio_data);
-            } else {
+            } else { 
+                // fallback in case response_ends_trial and allow_playback are both false, 
+                // which would mean the trial never ends
                 end_trial();
             }
         }
