@@ -31,13 +31,23 @@ jsPsych.plugins["image-audio-response"] = (function() {
             postprocessing: {
                 type: jsPsych.plugins.parameterType.FUNCTION,
                 pretty_name: 'Postprocessing function',
-                default: function(chunks) {return new Promise(
-                    function(resolve) {resolve(chunks)}
-                    )},
+                default: function(chunks) {
+                    return new Promise(function(resolve) {
+                        resolve(chunks);
+                    }
+                );},
                 description: 'Function to execute on the audio data prior to saving. '+
-                    'Passed the audio data and the return value is saved in the '+
-                    'response object. This can be used for saving a file, and generating an id '+
-                    'which relates the file to the trial data in the trial response.'
+                    'This function takes the audio data as an argument, '+
+                    'and returns an object with keys called "str" and "url". '+
+                    'The str and url values are saved in the trial data as "audio_data" and "audio_url". '+
+                    'The url value is used as the audio source to replay the recording if allow_playback is true. '+
+                    'By default, the str value is a base64 string which can be saved in the JSON/CSV data and '+
+                    'later converted back into an audio file. '+
+                    'This parameter can be used to pass a custom function that saves the file using a different '+
+                    'method/format and generates an ID that relates this file to the trial data. '+
+                    'The custom postprocessing function must return an object with "str" and "url" keys. '+
+                    'The url value must be a valid audio source, which is used if allow_playback is true. '+
+                    'The str value can be null.'
             },
             allow_playback: {
                 type: jsPsych.plugins.parameterType.BOOL,
@@ -108,9 +118,35 @@ jsPsych.plugins["image-audio-response"] = (function() {
         if(typeof trial.stimulus === 'undefined'){
             console.error('Required parameter "stimulus" missing in image-audio-response');
         }
-        if(typeof trial.postprocessing === 'undefined'){
-            console.error('Required parameter "postprocessing" missing in image-audio-response');
-        }
+        if(trial.postprocessing.name == 'default'){
+            // use the default postprocessing function
+            trial.postprocessing = function(data) {
+                return new Promise(function(resolve) {
+                    const blob = new Blob(data, { type: 'audio/webm' });
+                    // create URL, which is used to replay the audio file (if allow_playback is true)
+                    let url = URL.createObjectURL(blob);
+                    var reader = new window.FileReader();
+                    reader.readAsDataURL(blob);
+                    const readerPromise = new Promise(function(resolveReader) {
+                        reader.onloadend = function() {
+                            // Create base64 string, which is used to save the audio data in JSON/CSV-friendly format.
+                            // This has to go inside of a Promise so that the base64 data is converted before the 
+                            // higher-level data processing Promise is resolved (since that will pass the base64 data 
+                            // to the onRecordingFinish function).
+                            var base64 = reader.result;
+                            base64 = base64.split(',')[1];
+                            resolveReader(base64);
+                        };
+                    });
+                    readerPromise.then(function(base64) {
+                        // After the base64 string has been created we can resolve the higher-level Promise, 
+                        // which pass both the base64 data and the URL to the onRecordingFinish function.
+                        var processed_data = {url: url, str: base64};
+                        resolve(processed_data);
+                    });
+                });
+            };
+        } 
 
         let playbackElements = [];
         // store response
@@ -256,7 +292,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
             if (trial.response_ends_trial) {
                 end_trial();
             } else if (trial.allow_playback) {  // only allow playback if response doesn't end trial
-                showPlaybackTools(response.audio_data);
+                showPlaybackTools(response.audio_url);
             } else { 
                 // fallback in case response_ends_trial and allow_playback are both false, 
                 // which would mean the trial never ends
