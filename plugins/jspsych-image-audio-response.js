@@ -31,11 +31,32 @@ jsPsych.plugins["image-audio-response"] = (function() {
             postprocessing: {
                 type: jsPsych.plugins.parameterType.FUNCTION,
                 pretty_name: 'Postprocessing function',
-                default: function(chunks) {
+                default: function(data) {
                     return new Promise(function(resolve) {
-                        resolve(chunks);
-                    }
-                );},
+                        const blob = new Blob(data, { type: 'audio/webm' });
+                        // create URL, which is used to replay the audio file (if allow_playback is true)
+                        let url = URL.createObjectURL(blob);
+                        var reader = new window.FileReader();
+                        reader.readAsDataURL(blob);
+                        const readerPromise = new Promise(function(resolveReader) {
+                            reader.onloadend = function() {
+                                // Create base64 string, which is used to save the audio data in JSON/CSV format.
+                                // This has to go inside of a Promise so that the base64 data is converted before the 
+                                // higher-level data processing Promise is resolved (since that will pass the base64
+                                // data to the onRecordingFinish function).
+                                var base64 = reader.result;
+                                base64 = base64.split(',')[1];
+                                resolveReader(base64);
+                            };
+                        });
+                        readerPromise.then(function(base64) {
+                            // After the base64 string has been created we can resolve the higher-level Promise, 
+                            // which pass both the base64 data and the URL to the onRecordingFinish function.
+                            var processed_data = {url: url, str: base64};
+                            resolve(processed_data);
+                        });
+                    });
+                },
                 description: 'Function to execute on the audio data prior to saving. '+
                     'This function takes the audio data as an argument, '+
                     'and returns an object with keys called "str" and "url". '+
@@ -118,35 +139,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
         if(typeof trial.stimulus === 'undefined'){
             console.error('Required parameter "stimulus" missing in image-audio-response');
         }
-        if(trial.postprocessing.name == 'default'){
-            // use the default postprocessing function
-            trial.postprocessing = function(data) {
-                return new Promise(function(resolve) {
-                    const blob = new Blob(data, { type: 'audio/webm' });
-                    // create URL, which is used to replay the audio file (if allow_playback is true)
-                    let url = URL.createObjectURL(blob);
-                    var reader = new window.FileReader();
-                    reader.readAsDataURL(blob);
-                    const readerPromise = new Promise(function(resolveReader) {
-                        reader.onloadend = function() {
-                            // Create base64 string, which is used to save the audio data in JSON/CSV-friendly format.
-                            // This has to go inside of a Promise so that the base64 data is converted before the 
-                            // higher-level data processing Promise is resolved (since that will pass the base64 data 
-                            // to the onRecordingFinish function).
-                            var base64 = reader.result;
-                            base64 = base64.split(',')[1];
-                            resolveReader(base64);
-                        };
-                    });
-                    readerPromise.then(function(base64) {
-                        // After the base64 string has been created we can resolve the higher-level Promise, 
-                        // which pass both the base64 data and the URL to the onRecordingFinish function.
-                        var processed_data = {url: url, str: base64};
-                        resolve(processed_data);
-                    });
-                });
-            };
-        } 
 
         let playbackElements = [];
         // store response
@@ -238,7 +230,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
                                 onRecordingFinish(processedData);
                             });
                     } else {
-                        // should never fire - trial.postprocessing is mandatory
+                        // should never fire - trial.postprocessing should use the default function if
+                        // not passed in via trial parameters
                         onRecordingFinish(chunks);
                     }
                 }
