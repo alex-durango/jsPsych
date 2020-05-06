@@ -1,6 +1,7 @@
 /**
  * jspsych-image-audio-response
- * Matt Jaquiery, Feb 2018
+ * Matt Jaquiery, Feb 2018 (https://github.com/mjaquiery)
+ * Becky Gilbert, Apr 2020 (https://github.com/becky-gilbert)
  *
  * plugin for displaying a stimulus and getting an audio response
  *
