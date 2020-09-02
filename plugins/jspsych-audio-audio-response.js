@@ -33,12 +33,6 @@ jsPsych.plugins["audio-audio-response"] = (function() {
                 default: undefined,
                 description: 'Any visual stimulus to be displayed'
             },
-            audio_stimulus: {
-                type: jsPsych.plugins.parameterType.AUDIO,
-                pretty_name: 'Stimulus',
-                default: undefined,
-                description: 'The audio file to be played'
-            },
             buffer_length: {
                 type: jsPsych.plugins.parameterType.INT,
                 pretty_name: 'Buffer length',
