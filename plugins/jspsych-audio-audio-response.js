@@ -15,6 +15,7 @@
 jsPsych.plugins["audio-audio-response"] = (function() {
 
     var plugin = {};
+    jsPsych.pluginAPI.registerPreload('audio-audio-response', 'audio_stimulus', 'audio');
 
     plugin.info = {
         name: 'audio-audio-response',
