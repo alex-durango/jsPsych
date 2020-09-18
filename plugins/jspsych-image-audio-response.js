@@ -13,6 +13,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
 
     let plugin = {};
 
+    jsPsych.pluginAPI.registerPreload('image-audio-response', 'stimulus', 'image');
+
     plugin.info = {
         name: 'image-audio-response',
         description: 'Present an image and retrieve an audio response',
