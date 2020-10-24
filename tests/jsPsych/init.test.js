@@ -1,7 +1,7 @@
 const root = '../../';
 
 describe('jsPsych.init', function(){
-  test('adds body element if missing', function(){
+  test('only one body element added if initially missing', function(){
     document.querySelectorAll('body').forEach(function(el) {
         el.remove();
     });
@@ -25,10 +25,9 @@ describe('jsPsych.init', function(){
 
   });
 
-  test('does not duplicate body element if it exists', function() {
+  test('only one body element if it already exists', function() {
     var body_el = document.createElement("body");
     document.documentElement.appendChild(body_el);
-
     expect(document.querySelectorAll('body').length).toBe(1);
 
     require(root + 'jspsych.js');
