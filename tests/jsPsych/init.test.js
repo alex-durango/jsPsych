@@ -1,11 +1,11 @@
 const root = '../../';
-const utils = require('../testing-utils.js');
 
 describe('jsPsych.init', function(){
   test('adds body element if missing', function(){
-    document.getElementsByTagName('body').forEach(function(el) {
+    document.querySelectorAll('body').forEach(function(el) {
         el.remove();
     });
+    expect(document.querySelectorAll('body').length).toBe(0);
 
     require(root + 'jspsych.js');
     require(root + 'plugins/jspsych-html-keyboard-response.js');
@@ -17,7 +17,11 @@ describe('jsPsych.init', function(){
 
     jsPsych.init({timeline: [t]});
 
-    expect(document.querySelectorAll('body').length).toMatch(1);
+    expect(document.querySelectorAll('body').length).toBe(1);
+
+    document.querySelectorAll('body').forEach(function(el) {
+        el.remove();
+    });
 
   });
 
@@ -25,6 +29,8 @@ describe('jsPsych.init', function(){
     var body_el = document.createElement("body");
     document.documentElement.appendChild(body_el);
 
+    expect(document.querySelectorAll('body').length).toBe(1);
+
     require(root + 'jspsych.js');
     require(root + 'plugins/jspsych-html-keyboard-response.js');
 
@@ -35,7 +41,7 @@ describe('jsPsych.init', function(){
 
     jsPsych.init({timeline: [t]});
 
-    expect(document.querySelectorAll('body').length).toMatch(1);
+    expect(document.querySelectorAll('body').length).toBe(1);
     
   });
 });
