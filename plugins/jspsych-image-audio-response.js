@@ -13,6 +13,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
 
     let plugin = {};
 
+    jsPsych.pluginAPI.registerPreload('image-audio-response', 'stimulus', 'image');
+
     plugin.info = {
         name: 'image-audio-response',
         description: 'Present an image and retrieve an audio response',
@@ -283,6 +285,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', start_recording);
                     // Add visual indicators to let people know we're recording
                     document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_on_indicator;
+
                     // trial start time
                     start_time = performance.now();
                     // set timer to hide image if stimulus duration is set
@@ -384,8 +387,9 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 function onRecordingFinish(data) {
                     // switch to the off visual indicator
                     let light = document.querySelector('#jspsych-image-audio-response-recording-container');
-                    if (light !== null)
+                    if (light !== null) {
                         light.innerHTML = trial.recording_off_indicator;
+                    }
                     // measure rt
                     let end_time = performance.now();
                     let rt = end_time - start_time;
