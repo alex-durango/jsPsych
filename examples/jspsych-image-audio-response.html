@@ -32,8 +32,9 @@
     timeline.push({
         type: 'image-audio-response',
         stimulus: 'img/sad_face_1.jpg',
-        prompt: "<p>What emotion is this person showing?</p><p>(Allow playback = true, wait for mic approval = false)</p>",
+        prompt: "<p>What emotion is this person showing?</p><p>(Wait for mic approval = false, allow playback = true)</p>",
         allow_playback: true,
+        buffer_length: 2000,
         stimulus_width: 300
     });
 
@@ -41,17 +42,20 @@
         type: 'image-audio-response',
         stimulus: 'img/happy_face_2.jpg',
         response_ends_trial: true,
-        prompt: "<p>What emotion is this person showing?</p><p>(Trial ends after response)</p>",
-        stimulus_width: 300
+        prompt: "<p>What emotion is this person showing?</p><p>(Type 2 recording indicators - see bottom right of screen)</p>",
+        stimulus_width: 300,
+        recording_indicator_type: 2
     });
 
     timeline.push({
         type: 'image-audio-response',
         stimulus: 'img/sad_face_2.jpg',
         response_ends_trial: true,
-        prompt: "<p>What emotion is this person showing?</p><p>(Custom recording indicators)</p>",
+        prompt: "<p>What emotion is this person showing?</p><p>(Type 3 recording indicators - custom HTML)</p>",
         stimulus_width: 300,
-        recording_indicator_type: 2
+        recording_indicator_type: 3,
+        recording_on_indicator: '<span style="font-size: 25px; color: green; font-weight: bold;">TALK NOW!</span>',
+        recording_off_indicator: '<span style="font-size: 25px; color: gray;">not recording</span>'
     });
 
     jsPsych.init({
