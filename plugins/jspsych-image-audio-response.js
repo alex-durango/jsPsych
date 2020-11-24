@@ -77,17 +77,16 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 type: jsPsych.plugins.parameterType.BOOL,
                 pretty_name: 'Allow playback',
                 default: true,
-                description: 'Whether to allow the participant to play back their '+
-                'recording and re-record if unhappy.'
+                description: 'Whether or not to allow the participant to play back their audio recording and re-record if desired.'
             },
             recording_light: {
                 type: jsPsych.plugins.parameterType.HTML_STRING,
-                pretty_name: 'Recording light',
+                pretty_name: 'Recording light (on state)',
                 default: '<div id="jspsych-image-audio-response-light" '+
                     'style="border: 2px solid darkred; background-color: darkred; '+
                     'width: 50px; height: 50px; border-radius: 50px; margin: 20px auto; '+
                     'display: block;"></div>',
-                description: 'HTML to display while recording is in progress.'
+                description: 'HTML to display while recording is in progress. Default is a solid dark red circle.'
             },
             recording_light_off: {
                 type: jsPsych.plugins.parameterType.HTML_STRING,
@@ -96,13 +95,14 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 'style="border: 2px solid darkred; background-color: inherit; '+
                 'width: 50px; height: 50px; border-radius: 50px; margin: 20px auto; '+
                 'display: block;"></div>',
-                description: 'HTML to display while recording is not in progress.'
+                description: 'HTML to display while recording is not in progress. Default is a circle with a dark red border, '+
+                'filled with the background color of the page.'
             },
             prompt: {
                 type: jsPsych.plugins.parameterType.STRING,
                 pretty_name: 'Prompt',
                 default: null,
-                description: 'Any content here will be displayed under the button.'
+                description: 'Any content here will be displayed under the image.'
             },
             stimulus_duration: {
                 type: jsPsych.plugins.parameterType.INT,
@@ -114,31 +114,47 @@ jsPsych.plugins["image-audio-response"] = (function() {
 				type: jsPsych.plugins.parameterType.INT,
 				pretty_name: 'Image height',
 				default: null,
-				description: 'Set the image height in pixels'
+                description: 'Image height in pixels. If null, the original image height will be used (unless stimulus_width is specified and maintain_aspect_ratio is true, '+
+                'in which case stimulus_height will be adjusted accordingly).'
 			},
 			stimulus_width: {
 				type: jsPsych.plugins.parameterType.INT,
 				pretty_name: 'Image width',
 				default: null,
-				description: 'Set the image width in pixels'
-			},
+				description: 'Image width in pixels. If null, the original image width will be used (unless stimulus_height is specified and maintain_aspect_ratio is true, '+
+                'in which case stimulus_width will be adjusted accordingly).'
+            },
 			maintain_aspect_ratio: {
 				type: jsPsych.plugins.parameterType.BOOL,
 				pretty_name: 'Maintain aspect ratio',
 				default: true,
-				description: 'Maintain the aspect ratio after setting width or height'
-			},
+                description: 'Whether or not to maintain the aspect ratio of the image stimulus after setting width or height. If false, and if only one dimension is specified, '+
+                'then the unspecified dimension will be the original image . If true, and if only one dimension is specified, then the unspecified dimension will change '+
+                'so that the image aspect ratio is maintained. If both stimulus_height and stimulus_width are specified, then this parameter will be ignored.'
+            },
+            button_label_okay: {
+                type: jsPsych.plugins.parameterType.STRING,
+                pretty_name: 'Button label okay',
+                default: 'Okay',
+                description: 'Label of the button that accepts the audio response, and ends the trial which is shown when allow_playback is true.'
+            },
+            button_label_rerecord: {
+                type: jsPsych.plugins.parameterType.STRING,
+                pretty_name: 'Button label rerecord',
+                default: 'Rerecord',
+                description: 'Label of the button that re-records the audio response, which is shown when allow_playback is true.'
+            },
             margin_vertical: {
                 type: jsPsych.plugins.parameterType.STRING,
                 pretty_name: 'Margin vertical',
                 default: '0px',
-                description: 'The vertical margin of the button.'
+                description: 'The vertical margin of the "okay" and "rerecord" buttons.'
             },
             margin_horizontal: {
                 type: jsPsych.plugins.parameterType.STRING,
                 pretty_name: 'Margin horizontal',
                 default: '8px',
-                description: 'The horizontal margin of the button.'
+                description: 'The horizontal margin of the "okay" and "rerecord" buttons.'
             },
             response_ends_trial: {
                 type: jsPsych.plugins.parameterType.BOOL,
@@ -150,19 +166,20 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 type: jsPsych.plugins.parameterType.BOOL,
                 pretty_name: 'Wait for mic approval',
                 default: false,
-                description: 'If true, the trial will not start until the participant approves the browser mic request.'
+                description: 'If true, the trial will not start until the participant approves the browser mic request. If false, '+
+                'the image/prompt will be shown immediately, regardless of whether the participant needs to approve the mic before the recording can start.'
             },
             no_mic_message: {
                 type: jsPsych.plugins.parameterType.HTML_STRING,
                 pretty_name: 'No mic message',
                 default: 'Audio recording not possible.',
-                description: 'Message to show if no mic is found, or if the browser is not compatible.'
+                description: 'HTML-formatted string with message to show if no mic is found, or if the browser is not compatible.'
             }, 
             no_mic_message_duration: {
                 type: jsPsych.plugins.parameterType.INT,
                 pretty_name: 'No mic message duration',
                 default: 3000,
-                description: 'Duration to show the no mic message, if no mic is found or the browser is not compatible.'
+                description: 'Duration to show the no mic message, in ms, if no mic is found or the browser is not compatible.'
             }
         }
     };
@@ -240,7 +257,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 html += '<div id="jspsych-image-audio-response-audio-container"><audio id="jspsych-image-audio-response-audio" controls style="visibility:hidden;"></audio></div>';
 
                 // add button element with hidden buttons
-                html += '<div id="jspsych-image-audio-response-buttons"><button id="jspsych-image-audio-response-okay" class="jspsych-audio-response-button jspsych-btn" style="display: inline-block; margin:'+trial.margin_vertical+' '+trial.margin_horizontal+'; visibility:hidden;">Okay</button><button id="jspsych-image-audio-response-rerecord" class="jspsych-audio-response-button jspsych-btn" style="display: inline-block; margin:'+trial.margin_vertical+' '+trial.margin_horizontal+'; visibility:hidden;">Rerecord</button></div>';
+                html += '<div id="jspsych-image-audio-response-buttons"><button id="jspsych-image-audio-response-okay" class="jspsych-audio-response-button jspsych-btn" style="display: inline-block; margin:'+trial.margin_vertical+' '+trial.margin_horizontal+'; visibility:hidden;">'+trial.button_label_okay+'</button><button id="jspsych-image-audio-response-rerecord" class="jspsych-audio-response-button jspsych-btn" style="display: inline-block; margin:'+trial.margin_vertical+' '+trial.margin_horizontal+'; visibility:hidden;">'+trial.button_label_rerecord+'</button></div>';
 
                 function start_trial() {
                     display_element.innerHTML = html;
