@@ -79,7 +79,17 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 default: true,
                 description: 'Whether or not to allow the participant to play back their audio recording and re-record if desired.'
             },
-            recording_light: {
+            recording_indicator: {
+                type: jsPsych.plugins.parameterType.INT,
+                pretty_name: 'Recording indicator type',
+                default: 1,
+                description: 'Selects which recording indicator type to use. '+
+                '1- Obvious recording indicator (default). '+
+                '2- Unobtrusive recording indicator. '+
+                '3- Custom HTML. Stimulus will be placed directly above the HTML. '+
+                '4- Custom HTML. Stimulus will centred regardless of HTML positioning. '
+            },
+            recording_on_indicator: {
                 type: jsPsych.plugins.parameterType.HTML_STRING,
                 pretty_name: 'Recording light (on state)',
                 default: '<div id="jspsych-image-audio-response-light" '+
@@ -88,7 +98,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     'display: block;"></div>',
                 description: 'HTML to display while recording is in progress. Default is a solid dark red circle.'
             },
-            recording_light_off: {
+            recording_off_indicator: {
                 type: jsPsych.plugins.parameterType.HTML_STRING,
                 pretty_name: 'Recording light (off state)',
                 default: '<div id="jspsych-image-audio-response-light" '+
@@ -228,20 +238,29 @@ jsPsych.plugins["image-audio-response"] = (function() {
             } else {
 
                 mic = true;
-                
+
                 // add stimulus
-                var html = '<img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus" style="';
-                if(trial.stimulus_height !== null){
-                html += 'height:'+trial.stimulus_height+'px; '
-                if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-                    html += 'width: auto; ';
+                var html = '<img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus"';
+                if (trial.recording_indicator === 1 || trial.recording_indicator === 3) {
+                    // if recording indicator is type 1 or 3 , then do nothing
+                    // stimulus will stack on audio recording containers
+                    html += 'style="';
+                } else {
+                    // else dynamically position stimulus in centre of screen
+                    // stimulus will be positioned out of flow
+                    html += 'style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);';
                 }
+                if(trial.stimulus_height !== null){
+                    html += 'height:'+trial.stimulus_height+'px;';
+                    if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
+                        html += 'width: auto; ';
+                    }
                 }
                 if(trial.stimulus_width !== null){
-                html += 'width:'+trial.stimulus_width+'px; '
-                if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-                    html += 'height: auto; ';
-                }
+                    html += 'width:'+trial.stimulus_width+'px; '
+                    if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
+                        html += 'height: auto; ';
+                    }
                 }
                 html +='"></img>';
 
@@ -250,8 +269,32 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     html += trial.prompt;
                 }
 
-                // add recording off light
-                html += '<div id="jspsych-image-audio-response-recording-container">'+trial.recording_light_off+'</div>';
+                // set up recording indicator
+                if (trial.recording_indicator === 1) {
+                    // if indicator type 1, do HTML for obvious indicator
+                    trial.recording_on_indicator = '<div id="jspsych-image-audio-response-indicator" '+
+                        'style="border: 2px solid darkred; background-color: darkred; '+
+                        'width: 50px; height: 50px; border-radius: 50px; margin: 20px auto; '+
+                        'display: block;"></div>';	
+                    trial.recording_off_indicator = '<div id="jspsych-image-audio-response-indicator" '+
+                        'style="border: 2px solid darkred; background-color: inherit; '+
+                        'width: 50px; height: 50px; border-radius: 50px; margin: 20px auto; '+
+                        'display: block;"></div>';	
+                } else if (trial.recording_indicator === 2) {
+                    // if indicator type 2 do HTML for unobtrusive indicator
+                    trial.recording_on_indicator = '<div id="jspsych-image-audio-response-indicator" '+
+                        'style="position: fixed; bottom: 0; right: 0;">recording...</div>';	
+                    trial.recording_off_indicator = '<div id="jspsych-image-audio-response-indicator" '+
+                        'style="position: fixed; bottom: 0; right: 0;">not recording...</div>';	
+                } else {
+                    // if any other indicator type && HTML left unspecified then throw error but continue
+                    if (trial.recording_on_indicator === null || trial.recording_off_indicator === null) {
+                        console.error('No recording indicator HTML specified.');
+                    }	
+                } 
+
+                // add recording off indicator into HTML
+                html += '<div id="jspsych-image-audio-response-recording-container">'+trial.recording_off_indicator+'</div>';
 
                 // add audio element container with hidden audio element
                 html += '<div id="jspsych-image-audio-response-audio-container"><audio id="jspsych-image-audio-response-audio" controls style="visibility:hidden;"></audio></div>';
@@ -264,7 +307,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     document.querySelector('#jspsych-image-audio-response-okay').addEventListener('click', end_trial);
                     document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', start_recording);
                     // Add visual indicators to let people know we're recording
-                    document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
+                    document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_on_indicator;
+
                     // trial start time
                     start_time = performance.now();
                     // set timer to hide image if stimulus duration is set
@@ -288,7 +332,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(process_audio);
                     if (!trial.wait_for_mic_approval) {
                         // Add visual indicators to let people know we're recording
-                        document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
+                        document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_on_indicator;
                     }
                 }
                 
@@ -299,7 +343,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                         if (start_time === null) {
                             start_trial();
                         } else {
-                            document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_light;
+                            document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = trial.recording_on_indicator;
                         }
                     } 
 
@@ -366,8 +410,9 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 function onRecordingFinish(data) {
                     // switch to the off visual indicator
                     let light = document.querySelector('#jspsych-image-audio-response-recording-container');
-                    if (light !== null)
-                        light.innerHTML = trial.recording_light_off;
+                    if (light !== null) {
+                        light.innerHTML = trial.recording_off_indicator;
+                    }
                     // measure rt
                     let end_time = performance.now();
                     let rt = end_time - start_time;
