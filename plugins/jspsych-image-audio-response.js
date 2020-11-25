@@ -172,7 +172,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
             wait_for_mic_approval: {
                 type: jsPsych.plugins.parameterType.BOOL,
                 pretty_name: 'Wait for mic approval',
-                default: false,
+                default: true,
                 description: 'If true, the trial will not start until the participant approves the browser mic request. If false, '+
                 'the image/prompt will be shown immediately, regardless of whether the participant needs to approve the mic before the recording can start.'
             },
@@ -240,7 +240,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 // create stimulus HTML
                 var html = '<div id="jspsych-image-audio-response-container" ';
                 if (trial.recording_indicator_type == 2 || trial.recording_indicator_type == 4) {
-                    // position stimulus/prompt in center of screen, irrespective of recording on/off HTML
+                    // position stimulus/prompt/playback controls in center of screen, irrespective of recording on/off HTML
                     html += 'style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%)";';
                 }
                 html += '><img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus" style="';
@@ -262,7 +262,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 if (trial.prompt !== null) {
                     html += trial.prompt;
                 }
-                html += '</div>';
 
                 // set up recording indicator
                 if (trial.recording_indicator_type === 1) {
@@ -284,21 +283,25 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 } else {
                     // if indicator type 3 or 4 && HTML left unspecified, then throw error 
                     if (trial.recording_on_indicator === null || trial.recording_off_indicator === null) {
-                        console.error('No recording indicator HTML specified.');
+                        console.error('Error in jspsych-image-audio-response.js: No recording indicator HTML specified.');
                     } else {
                         recording_on_html = trial.recording_on_indicator;
                         recording_off_html = trial.recording_off_indicator;
                     }
                 } 
-
-                // add recording off indicator into HTML
-                html += '<div id="jspsych-image-audio-response-recording-container">'+recording_off_html+'</div>';
-
+                if (trial.recording_indicator_type === 1 || trial.recording_indicator_type === 3) {
+                    // add recording off indicator into stimulus/prompt container div so that it is centered with this content
+                    html += '<div id="jspsych-image-audio-response-recording-container">'+recording_off_html+'</div>';
+                }
                 // add audio element container with hidden audio element
                 html += '<div id="jspsych-image-audio-response-audio-container"><audio id="jspsych-image-audio-response-audio" controls style="visibility:hidden;"></audio></div>';
-
                 // add button element with hidden buttons
                 html += '<div id="jspsych-image-audio-response-buttons"><button id="jspsych-image-audio-response-okay" class="jspsych-audio-response-button jspsych-btn" style="display: inline-block; margin:'+trial.margin_vertical+' '+trial.margin_horizontal+'; visibility:hidden;">'+trial.button_label_okay+'</button><button id="jspsych-image-audio-response-rerecord" class="jspsych-audio-response-button jspsych-btn" style="display: inline-block; margin:'+trial.margin_vertical+' '+trial.margin_horizontal+'; visibility:hidden;">'+trial.button_label_rerecord+'</button></div>';
+                html += '</div>';  // end container div
+                if (trial.recording_indicator_type === 2 || trial.recording_indicator_type === 4) {
+                    // add recording off indicator outside of stimulus/prompt container div to allow custom positioning
+                    html += '<div id="jspsych-image-audio-response-recording-container">'+recording_off_html+'</div>';
+                }
 
                 function start_trial() {
                     display_element.innerHTML = html;
@@ -381,10 +384,11 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     if (data instanceof Blob) {
                         const blob = new Blob(data, { type: 'audio/webm' });
                         url = (URL.createObjectURL(blob));
+                    } else if (typeof data.url !== 'undefined' && data.url !== null) {
+                        url = data.url;
                     } else {
-                        url = data;
+                        console.error("Error in jspsych-image-audio-response.js: The postprocessing function must return an audio blob or URL to replay the audio.")
                     }
-                    // show audio player
                     let player = playerDiv.querySelector('#jspsych-image-audio-response-audio');
                     player.src = url;
                     player.style.visibility = "visible";
@@ -408,13 +412,12 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     let end_time = performance.now();
                     let rt = end_time - start_time;
                     response.audio_data = data.str;
-                    response.audio_url = data.url;
                     response.rt = rt;
 
                     if (trial.response_ends_trial) {
                         end_trial();
                     } else if (trial.allow_playback) {  // only allow playback if response doesn't end trial
-                        showPlaybackTools(response.audio_url);
+                        showPlaybackTools(data);
                     } else { 
                         // fallback in case response_ends_trial and allow_playback are both false, 
                         // which would mean the trial never ends
