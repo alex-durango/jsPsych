@@ -163,12 +163,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 default: '8px',
                 description: 'The horizontal margin of the "okay" and "rerecord" buttons.'
             },
-            response_ends_trial: {
-                type: jsPsych.plugins.parameterType.BOOL,
-                pretty_name: 'Response ends trial',
-                default: false,
-                description: 'If true, then trial will end when user responds.'
-            },
             wait_for_mic_approval: {
                 type: jsPsych.plugins.parameterType.BOOL,
                 pretty_name: 'Wait for mic approval',
@@ -414,13 +408,9 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     response.audio_data = data.str;
                     response.rt = rt;
 
-                    if (trial.response_ends_trial) {
-                        end_trial();
-                    } else if (trial.allow_playback) {  // only allow playback if response doesn't end trial
+                    if (trial.allow_playback) {  
                         showPlaybackTools(data);
                     } else { 
-                        // fallback in case response_ends_trial and allow_playback are both false, 
-                        // which would mean the trial never ends
                         end_trial();
                     }
                 }

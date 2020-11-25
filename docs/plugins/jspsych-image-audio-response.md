@@ -49,7 +49,6 @@ button_label_okay | string | "Okay" | Label of the button that accepts the audio
 button_label_rerecord | string | "Rerecord" | Label of the button that re-records the audio response, which is shown when `allow_playback` is true.
 margin_vertical | string | '0px' | Vertical margin of the "okay" and "rerecord" buttons.
 margin_horizontal | string | '8px' | Horizontal margin of the "okay" and "rerecord" buttons.
-response_ends_trial | boolean | true | If true, then the trial will end whenever the participant makes a response (assuming they make their response before the cutoff specified by the `trial_duration` parameter). If false, then the trial will continue until the value for `trial_duration` is reached. You can use this parameter to force the participant to view a stimulus for a fixed amount of time, even if they respond before the time is complete.
 wait_for_mic_approval | boolean | false | If true, the trial will not start until the participant approves the browser mic request. After the participant approves the mic request, the trial start time is logged and the page content is shown. If false, the image/prompt/recording indicator will be shown immediately, regardless of whether or not the browser requests permission to use the mic.
 no_mic_message | string | "Audio recording not possible." | HTML-formatted string with message to show if no mic is found, or if the browser is not compatible.
 no_mic_message_duration | numeric | 3000 | Duration to show the no mic message, in ms, if no mic is found or the browser is not compatible.
@@ -109,7 +108,6 @@ var trial = {
     stimulus: '../img/happy_face_1.jpg',
     buffer_length: 3000,
     allow_playback: false,
-    response_ends_trial: true,
     postprocessing: save_file_to_jatos,
     on_finish: function() {
         trial_count++;
