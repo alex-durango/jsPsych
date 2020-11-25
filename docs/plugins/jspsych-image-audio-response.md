@@ -60,7 +60,7 @@ In addition to the [default data collected by all plugins](overview#data-collect
 
 Name | Type | Value
 -----|------|------
-audio_data | string | The result of running the `postprocessing` function on the contents of the audio buffer. If the default `postprocessing` function is used, this will contain
+audio_data | string | The value of the "str" key in the object that is returned by the `postprocessing` function. If the default `postprocessing` function is used, this will contain the audio .webm data encoded as a base 64 string, which can be decoded back into an audio file offline. If a custom `postprocessing` function is used, this field can be used to store any other string, such as the name of the audio file that was saved to a server on this trial.
 rt | numeric | The response time in milliseconds for the audio recording to end. The time is measured from when the stimulus first appears on the screen until the trial ends.
 stimulus | string | The image file that was displayed.
 has_mic | boolean | Whether or not the browser is compatible and successfully detected/accessed the mic. If false, there was a problem initiating the audio recording, and the `no_mic_message` was shown to the participant. This data allows the researcher to check the success of audio recording after an initial test trial, before continuing with additional audio-response trials.
