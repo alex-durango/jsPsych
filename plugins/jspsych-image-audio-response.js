@@ -86,8 +86,8 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 description: 'Selects which recording indicator type to use. '+
                 '1- Obvious recording indicator (default): filled/unfilled red circle under image, all content centered. '+
                 '2- Unobtrusive recording indicator: image centered, with "recording..." or "not recording..." text in bottom-right corner. '+
-                '3- Custom HTML. Stimulus will be placed directly above the recording on/off HTML, and all content will be centered. '+
-                '4- Custom HTML. Stimulus will be centered regardless of recording on/off HTML positioning.'
+                '3- Custom HTML. Stimulus/prompt will be placed directly above the recording on/off HTML, and all content will be centered. '+
+                '4- Custom HTML. Stimulus/prompt will be centered regardless of recording on/off HTML positioning.'
             },
             recording_on_indicator: {
                 type: jsPsych.plugins.parameterType.HTML_STRING,
@@ -238,14 +238,12 @@ jsPsych.plugins["image-audio-response"] = (function() {
                 mic = true;
 
                 // create stimulus HTML
-                var html = '<img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus"';
-                if (trial.recording_indicator_type === 1 || trial.recording_indicator_type === 3) {
-                    // if recording indicator is type 1 or 3, stimulus will stack on audio recording on/off HTML
-                    html += 'style="';
-                } else {
-                    // otherwise dynamically position stimulus in center of screen, out of flow
-                    html += 'style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);';
+                var html = '<div id="jspsych-image-audio-response-container" ';
+                if (trial.recording_indicator_type == 2 || trial.recording_indicator_type == 4) {
+                    // position stimulus/prompt in center of screen, irrespective of recording on/off HTML
+                    html += 'style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%)";';
                 }
+                html += '><img src="'+trial.stimulus+'" id="jspsych-image-audio-response-stimulus" style="';
                 if(trial.stimulus_height !== null){
                     html += 'height:'+trial.stimulus_height+'px;';
                     if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
@@ -258,12 +256,13 @@ jsPsych.plugins["image-audio-response"] = (function() {
                         html += 'height: auto; ';
                     }
                 }
-                html +='"></img>';
+                html +='">';
 
                 // add prompt if there is one
                 if (trial.prompt !== null) {
                     html += trial.prompt;
                 }
+                html += '</div>';
 
                 // set up recording indicator
                 if (trial.recording_indicator_type === 1) {
@@ -305,8 +304,6 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     display_element.innerHTML = html;
                     document.querySelector('#jspsych-image-audio-response-okay').addEventListener('click', end_trial);
                     document.querySelector('#jspsych-image-audio-response-rerecord').addEventListener('click', start_recording);
-                    // Add visual indicators to let people know we're recording
-                    document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = recording_on_html;
 
                     // trial start time
                     start_time = performance.now();
@@ -329,22 +326,16 @@ jsPsych.plugins["image-audio-response"] = (function() {
                         element.style.visibility = 'hidden';
                     });
                     navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(process_audio);
-                    if (!trial.wait_for_mic_approval) {
-                        // Add visual indicators to let people know we're recording
-                        document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = recording_on_html;
-                    }
                 }
                 
-                // function to handle responses by the subject
+                // function to start of recording, after getUserMedia request has been approved
                 function process_audio(stream) {
 
-                    if (trial.wait_for_mic_approval) {
-                        if (start_time === null) {
-                            start_trial();
-                        } else {
-                            document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = recording_on_html;
-                        }
-                    } 
+                    if (trial.wait_for_mic_approval && start_time === null) {
+                        start_trial();
+                    }
+                    // After recording has been approved by user, add visual indicators to let people know we're recording
+                    document.querySelector('#jspsych-image-audio-response-recording-container').innerHTML = recording_on_html;
 
                     // This code largely thanks to skyllo at
                     // http://air.ghost.io/recording-to-an-audio-file-using-html5-and-js/
@@ -375,7 +366,7 @@ jsPsych.plugins["image-audio-response"] = (function() {
 
                     // start recording with 1 second time between receiving 'ondataavailable' events
                     recorder.start(1000);
-                    // setTimeout to stop recording after 4 seconds
+                    // setTimeout to stop recording 
                     setTimeout(function() {
                         // this will trigger one final 'ondataavailable' event and set recorder state to 'inactive'
                         recorder.stop();
@@ -393,21 +384,22 @@ jsPsych.plugins["image-audio-response"] = (function() {
                     } else {
                         url = data;
                     }
+                    // show audio player
                     let player = playerDiv.querySelector('#jspsych-image-audio-response-audio');
                     player.src = url;
                     player.style.visibility = "visible";
-                    // Okay/rerecord buttons
+                    // show okay/rerecord buttons
                     let buttonDiv = document.querySelector('#jspsych-image-audio-response-buttons');
                     let okay = buttonDiv.querySelector('#jspsych-image-audio-response-okay');
                     let rerecord = buttonDiv.querySelector('#jspsych-image-audio-response-rerecord');
                     okay.style.visibility = 'visible';
                     rerecord.style.visibility = 'visible';
-                    // Save ids of things we want to hide later:
+                    // Save IDs of things we want to hide later:
                     playbackElements = [player.id, okay.id, rerecord.id];
                 }
 
                 function onRecordingFinish(data) {
-                    // switch to the off visual indicator
+                    // switch to the recording_off_indicator
                     let light = document.querySelector('#jspsych-image-audio-response-recording-container');
                     if (light !== null) {
                         light.innerHTML = recording_off_html;
