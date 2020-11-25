@@ -14,26 +14,25 @@
     // https://base64.guru/converter/decode/audio (useful for testing but should not be used with real particpant data).
     // The default postprocessing function can be overwritten by passing a custom function to the 'postprocessing' 
     // parameter. This provides the option to save the data as an audio file rather than a string.
-    // See the plugin documentation for more details. 
+    // See the plugin documentation for an example of a custom function that saves the audio data to a server. 
 
-    let timeline = [];
+    var timeline = [];
 
     timeline.push({
         type: 'image-audio-response',
         stimulus: 'img/happy_face_1.jpg',
-        prompt: "<p>What emotion is this person showing?</p><p>(Wait for mic approval = true, image disappears after 1s, allow playback = false)</p>",
-        allow_playback: false,
-        stimulus_duration: 1000,
+        prompt: "<p>What emotion is this person showing?</p>"+
+        "<p>(Allow playback = true)</p>",
         buffer_length: 2000,
-        wait_for_mic_approval: true,
         stimulus_width: 300
     });
 
     timeline.push({
         type: 'image-audio-response',
         stimulus: 'img/sad_face_1.jpg',
-        prompt: "<p>What emotion is this person showing?</p><p>(Wait for mic approval = false, allow playback = true)</p>",
-        allow_playback: true,
+        prompt: "<p>What emotion is this person showing?</p>"+
+        "<p>(Wait for mic approval = false, allow playback = true)</p>",
+        wait_for_mic_approval: false,
         buffer_length: 2000,
         stimulus_width: 300
     });
@@ -41,8 +40,11 @@
     timeline.push({
         type: 'image-audio-response',
         stimulus: 'img/happy_face_2.jpg',
-        response_ends_trial: true,
-        prompt: "<p>What emotion is this person showing?</p><p>(Type 2 recording indicators - see bottom right of screen)</p>",
+        prompt: "<p>What emotion is this person showing?</p>"+
+        "<p>(Wait for mic approval = false, allow playback = false,<br>"+
+        "recording indicator type = 2 - see bottom right of screen)</p>",
+        wait_for_mic_approval: false,
+        allow_playback: false,
         stimulus_width: 300,
         recording_indicator_type: 2
     });
@@ -50,12 +52,25 @@
     timeline.push({
         type: 'image-audio-response',
         stimulus: 'img/sad_face_2.jpg',
-        response_ends_trial: true,
-        prompt: "<p>What emotion is this person showing?</p><p>(Type 3 recording indicators - custom HTML)</p>",
+        prompt: "<p>What emotion is this person showing?</p>"+
+        "<p>(Wait for mic approval = true, allow playback = true,<br>"+
+        "recording indicator type = 3 - custom HTML, centered below stimulus/prompt and above playback controls)</p>",
         stimulus_width: 300,
         recording_indicator_type: 3,
-        recording_on_indicator: '<span style="font-size: 25px; color: green; font-weight: bold;">TALK NOW!</span>',
-        recording_off_indicator: '<span style="font-size: 25px; color: gray;">not recording</span>'
+        recording_on_indicator: '<p style="color: green; font-weight: bold;">TALK NOW!</p>',
+        recording_off_indicator: '<p style="color: gray; font-weight: bold;">Not recording.</p>'
+    });
+
+    timeline.push({
+        type: 'image-audio-response',
+        stimulus: 'img/happy_face_3.jpg',
+        prompt: "<p>What emotion is this person showing?</p>"+
+        "<p>(Wait for mic approval = false, allow playback = true,<br>"+
+        "recording indicator type = 4 - custom HTML/positioning, does not affect stimulus/prompt/playback positioning)</p>",
+        stimulus_width: 300,
+        recording_indicator_type: 4,
+        recording_on_indicator: '<p style="position: fixed; top: 10px; left: 50%; transform: translate(-50%, 0%); font-size: 30px; color: red; font-weight: bold;">RECORDING!</p>',
+        recording_off_indicator: '<p style="position: fixed; top: 10px; left: 50%; transform: translate(-50%, 0%); font-size: 30px; color: gray; font-weight: bold;">Not recording.</p>'
     });
 
     jsPsych.init({
